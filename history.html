@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plant Data History</title>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(to right, #e0f7fa, #ffffff);
+  margin: 0;
+  padding: 20px;
+  color: #004d40;
+}
+
+h1, h2 {
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+h1 { color: #00796b; font-size: 28px; }
+h2 { color: #00695c; font-size: 22px; }
+
+.button-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+button {
+  padding: 10px 18px;
+  background: linear-gradient(135deg, #00796b, #004d40);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  transition: 0.3s;
+}
+
+button:hover {
+  background: linear-gradient(135deg, #004d40, #00796b);
+  transform: translateY(-2px);
+}
+
+input[type="date"] {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #00796b;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.table-container {
+  overflow-x:auto;
+  margin-bottom: 25px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  padding: 10px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+th, td {
+  border: 1px solid #00796b;
+  padding: 8px;
+  text-align: center;
+  white-space: nowrap;
+  word-wrap: break-word;
+}
+
+th {
+  background: linear-gradient(to right, #00796b, #004d40);
+  color: white;
+  font-weight: bold;
+}
+
+tr:nth-child(even) { background: #b2dfdb; }
+tr:hover { background: #80cbc4; }
+
+.moisture-low { color: #f44336; font-weight: bold; }
+.moisture-medium { color: #ff9800; font-weight: bold; }
+.moisture-high { color: #4caf50; font-weight: bold; }
+
+canvas {
+  max-width: 100%;
+  margin-bottom: 30px;
+  display: none;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  padding: 10px;
+}
+
+/* Mobile Optimizations */
+@media screen and (max-width:480px){
+  body { padding: 10px; }
+  h1 { font-size: 20px; }
+  h2 { font-size: 18px; }
+  table { font-size: 12px; }
+  th, td { padding: 6px; }
+  button { padding: 8px 12px; font-size: 12px; flex: 1 1 45%; }
+  input[type="date"] { font-size: 12px; padding: 6px 10px; flex: 1 1 45%; }
+  .button-container { flex-direction: column; gap: 8px; }
+}
+</style>
+</head>
+<body>
+
+<h1>🌱 Plant Data History</h1>
+
+<!-- Date Selector & Buttons -->
+<div class="button-container">
+  <input type="date" id="datePicker">
+  <button id="refreshBtn">Refresh Data</button>
+  <button id="viewGraphBtn">View Graph</button>
+</div>
+
+<div class="table-container">
+  <table id="historyTable">
+    <thead>
+      <tr>
+        <th>Timestamp</th>
+        <th>Temperature (°C)</th>
+        <th>Humidity (%)</th>
+        <th>Plant 1 Raw</th>
+        <th>Plant 1 %</th>
+        <th>Plant 2 Raw</th>
+        <th>Plant 2 %</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<h2>📊 Plant Moisture Trends</h2>
+<canvas id="plantChart"></canvas>
+
+<script>
+// ---------- Firebase Init ----------
+const firebaseConfig = {
+  apiKey: "AIzaSyDptVEqHvZqOF1deQrOpnhQI_w6Vb5n4zQ",
+  authDomain: "watersystem-e444e.firebaseapp.com",
+  databaseURL: "https://watersystem-e444e-default-rtdb.firebaseio.com",
+  projectId: "watersystem-e444e",
+  storageBucket: "watersystem-e444e.firebasestorage.app",
+  messagingSenderId: "528910169669",
+  appId: "1:528910169669:web:05c99d2ca2e6d8c069952c",
+  measurementId: "G-H05MNY69J6"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ---------- Helper Functions ----------
+function getMoistureClass(percent){
+  return percent<30?'moisture-low':percent<70?'moisture-medium':'moisture-high';
+}
+function calculatePercent(raw){
+  return Math.round((4095 - raw)/4095 * 100);
+}
+
+// ---------- Chart Setup ----------
+const plantCanvas = document.getElementById('plantChart');
+const ctx = plantCanvas.getContext('2d');
+
+const gradient1 = ctx.createLinearGradient(0,0,0,400);
+gradient1.addColorStop(0, 'rgba(76,175,80,0.4)');
+gradient1.addColorStop(1, 'rgba(76,175,80,0.05)');
+
+const gradient2 = ctx.createLinearGradient(0,0,0,400);
+gradient2.addColorStop(0, 'rgba(255,152,0,0.4)');
+gradient2.addColorStop(1, 'rgba(255,152,0,0.05)');
+
+let plantChart = new Chart(ctx, {
+  type: 'line',
+  data: { labels: [], datasets: [
+    { label: 'Plant 1 %', data: [], borderColor: '#4caf50', backgroundColor: gradient1, tension: 0.3, pointRadius:4, pointHoverRadius:6 },
+    { label: 'Plant 2 %', data: [], borderColor: '#ff9800', backgroundColor: gradient2, tension: 0.3, pointRadius:4, pointHoverRadius:6 }
+  ]},
+  options: {
+    responsive:true,
+    interaction:{ mode:'index', intersect:false },
+    stacked:false,
+    animation:{ duration:700, easing:'easeOutQuart' },
+    plugins:{
+      legend:{ position:'top' },
+      tooltip:{
+        callbacks:{
+          label:function(context){
+            const index = context.dataIndex;
+            const dataset = context.dataset;
+            const raw = dataset.label === 'Plant 1 %' ? rawData1[index] : rawData2[index];
+            return `${dataset.label}: ${context.formattedValue}% (Raw: ${raw})`;
+          }
+        }
+      }
+    },
+    scales:{
+      x:{ title:{ display:true, text:'Timestamp' } },
+      y:{ title:{ display:true, text:'Moisture (%)' }, min:0, max:100 }
+    }
+  }
+});
+
+let rawData1 = [];
+let rawData2 = [];
+
+// ---------- Load Plant Data ----------
+function loadHistory(){
+  const tbody = document.querySelector("#historyTable tbody");
+  tbody.innerHTML = '';
+
+  const selectedDate = document.getElementById('datePicker').value; // YYYY-MM-DD
+  db.ref('plantdata').once('value').then(snapshot=>{
+    const data = snapshot.val();
+    if(!data) return;
+    const timestamps = Object.keys(data).sort();
+    const labels = [], p1Data = [], p2Data = [];
+    rawData1 = []; rawData2 = [];
+
+    timestamps.forEach(ts=>{
+      const entry = data[ts];
+      if(selectedDate && !ts.startsWith(selectedDate)) return;
+
+      const p1Percent = calculatePercent(entry.plant1);
+      const p2Percent = calculatePercent(entry.plant2);
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${ts}</td>
+        <td>${entry.temperature}</td>
+        <td>${entry.humidity}</td>
+        <td>${entry.plant1}</td>
+        <td class="${getMoistureClass(p1Percent)}">${p1Percent}</td>
+        <td>${entry.plant2}</td>
+        <td class="${getMoistureClass(p2Percent)}">${p2Percent}</td>
+      `;
+      tbody.appendChild(tr);
+
+      labels.push(ts); p1Data.push(p1Percent); p2Data.push(p2Percent);
+      rawData1.push(entry.plant1); rawData2.push(entry.plant2);
+    });
+
+    plantChart.data.labels = labels;
+    plantChart.data.datasets[0].data = p1Data;
+    plantChart.data.datasets[1].data = p2Data;
+    plantChart.update();
+  }).catch(err=>console.error("Error fetching history:", err));
+}
+
+loadHistory();
+document.getElementById('refreshBtn').addEventListener('click', loadHistory);
+document.getElementById('datePicker').addEventListener('change', loadHistory);
+
+// ---------- Toggle Graph View ----------
+document.getElementById('viewGraphBtn').addEventListener('click', ()=>{
+  if(plantCanvas.style.display==='none' || plantCanvas.style.display===''){
+    plantCanvas.style.display='block';
+    document.getElementById('viewGraphBtn').innerText='Hide Graph';
+  } else {
+    plantCanvas.style.display='none';
+    document.getElementById('viewGraphBtn').innerText='View Graph';
+  }
+});
+</script>
+</body>
+</html>
