@@ -10,6 +10,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
+/* --- General Styles --- */
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background: linear-gradient(to right, #e0f7fa, #ffffff);
@@ -59,8 +60,10 @@ input[type="date"] {
   cursor: pointer;
 }
 
+/* --- Table Styles --- */
 .table-container {
-  overflow-x:auto;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch; /* smooth scrolling on iOS */
   margin-bottom: 25px;
   background: white;
   border-radius: 12px;
@@ -71,7 +74,7 @@ input[type="date"] {
 table {
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed;
+  table-layout: auto; /* allow columns to adjust */
 }
 
 th, td {
@@ -105,13 +108,21 @@ canvas {
   padding: 10px;
 }
 
-/* Mobile Optimizations */
+/* --- Mobile Optimizations --- */
 @media screen and (max-width:480px){
   body { padding: 10px; }
   h1 { font-size: 20px; }
   h2 { font-size: 18px; }
-  table { font-size: 12px; }
+
+  table { font-size: 12px; display: block; overflow-x: auto; white-space: nowrap; }
   th, td { padding: 6px; }
+
+  /* Hide raw sensor columns for mobile */
+  th:nth-child(4), td:nth-child(4), /* Plant 1 Raw */
+  th:nth-child(6), td:nth-child(6)  /* Plant 2 Raw */ {
+    display: none;
+  }
+
   button { padding: 8px 12px; font-size: 12px; flex: 1 1 45%; }
   input[type="date"] { font-size: 12px; padding: 6px 10px; flex: 1 1 45%; }
   .button-container { flex-direction: column; gap: 8px; }
