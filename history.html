@@ -133,6 +133,10 @@ canvas {
 
 <h1>🌱 Plant Data History</h1>
 
+<button onclick="location.href='index.html'" style="margin-bottom:15px">
+  ⬅ Back to Dashboard
+</button>
+
 <!-- Date Selector & Buttons -->
 <div class="button-container">
   <input type="date" id="datePicker">
@@ -231,21 +235,27 @@ let rawData2 = [];
 
 // ---------- Load Plant Data ----------
 function loadHistory(){
+  const selectedDate = document.getElementById('datePicker').value;
+  if(!selectedDate){
+  
+    return;
+  }
+
   const tbody = document.querySelector("#historyTable tbody");
   tbody.innerHTML = '';
 
-  const selectedDate = document.getElementById('datePicker').value; // YYYY-MM-DD
   db.ref('plantdata').once('value').then(snapshot=>{
     const data = snapshot.val();
     if(!data) return;
+
     const timestamps = Object.keys(data).sort();
     const labels = [], p1Data = [], p2Data = [];
     rawData1 = []; rawData2 = [];
 
     timestamps.forEach(ts=>{
-      const entry = data[ts];
-      if(selectedDate && !ts.startsWith(selectedDate)) return;
+      if(!ts.startsWith(selectedDate)) return;
 
+      const entry = data[ts];
       const p1Percent = calculatePercent(entry.plant1);
       const p2Percent = calculatePercent(entry.plant2);
 
@@ -261,16 +271,20 @@ function loadHistory(){
       `;
       tbody.appendChild(tr);
 
-      labels.push(ts); p1Data.push(p1Percent); p2Data.push(p2Percent);
-      rawData1.push(entry.plant1); rawData2.push(entry.plant2);
+      labels.push(ts);
+      p1Data.push(p1Percent);
+      p2Data.push(p2Percent);
+      rawData1.push(entry.plant1);
+      rawData2.push(entry.plant2);
     });
 
     plantChart.data.labels = labels;
     plantChart.data.datasets[0].data = p1Data;
     plantChart.data.datasets[1].data = p2Data;
     plantChart.update();
-  }).catch(err=>console.error("Error fetching history:", err));
+  });
 }
+
 
 loadHistory();
 document.getElementById('refreshBtn').addEventListener('click', loadHistory);
