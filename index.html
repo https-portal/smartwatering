@@ -148,12 +148,36 @@ h1{
 #closeMapBtn { background:red; }
 #closeMapBtn:hover { background:darkred; }
 #saveLocationBtn:hover { background:#004d40; }
+
+
+/* DEVICE STATUS */
+#deviceStatus{
+  text-align:center;
+  padding:10px;
+  border-radius:10px;
+  font-weight:bold;
+  margin-bottom:15px;
+  color:white;
+}
+
+.status.online{ background:#4caf50; }
+.status.offline{ background:#f44336; }
+.status.waiting{ background:#ff9800; }
+
+
 </style>
 </head>
 
 <body>
 
 <h1>Water System Dashboard</h1>
+
+
+<!-- DEVICE STATUS -->
+<div id="deviceStatus" class="status waiting">
+  ⚠️ Checking device status...
+</div>
+
 
 <div id="topbar">
   <button id="setLocationBtn">📍 Set Location</button>
@@ -260,18 +284,53 @@ function setGauge(gaugeId, textId, value, max = 100, unit = "%") {
 
 // ---------- Firebase Listeners ----------
 db.ref('Air').on('value', snap => {
-  const d = snap.val(); if(!d) return;
+  const d = snap.val(); 
+  if(!d) return;
+
+  // Pass air + plant data to heartbeat
+  db.ref('Plant1Moisture').once('value').then(p1Snap=>{
+    db.ref('Plant2Moisture').once('value').then(p2Snap=>{
+      deviceHeartbeat({
+        air: d,
+        plant1: p1Snap.val(),
+        plant2: p2Snap.val()
+      });
+    });
+  });
+
   setGauge("airTempGauge","airTempText",d.temperature,50,"°C");
   setGauge("airHumGauge","airHumText",d.humidity,100,"%");
 });
 
 db.ref('Plant1Moisture').on('value', snap => {
   const d = snap.val(); if(!d) return;
+
+  db.ref('Air').once('value').then(aSnap=>{
+    db.ref('Plant2Moisture').once('value').then(p2Snap=>{
+      deviceHeartbeat({
+        air: aSnap.val(),
+        plant1: d,
+        plant2: p2Snap.val()
+      });
+    });
+  });
+
   setGauge("p1Gauge","p1Text",d.percent,100,"%");
 });
 
 db.ref('Plant2Moisture').on('value', snap => {
   const d = snap.val(); if(!d) return;
+
+  db.ref('Air').once('value').then(aSnap=>{
+    db.ref('Plant1Moisture').once('value').then(p1Snap=>{
+      deviceHeartbeat({
+        air: aSnap.val(),
+        plant1: p1Snap.val(),
+        plant2: d
+      });
+    });
+  });
+
   setGauge("p2Gauge","p2Text",d.percent,100,"%");
 });
 
@@ -356,7 +415,99 @@ mapModal.addEventListener('click', e=>{ if(e.target===mapModal) mapModal.style.d
 document.getElementById('viewHistoryBtn').addEventListener('click', ()=>{
   location.href = 'history.html';
 });
+
+
+// ---------- Device Status Watchdog ----------
+// ---------- Device Status Watchdog ----------
+// ---------- Device Status Watchdog ----------
+// ---------- Device Status Watchdog ----------
+let lastUpdateTime = 0;
+let currentState = "waiting"; // track current status
+const statusEl = document.getElementById("deviceStatus");
+
+function setStatus(type){
+
+  // ⭐ prevent repeated updates
+  if(type === currentState) return;
+
+  currentState = type;
+
+  if(type==="online"){
+    statusEl.className="status online";
+    statusEl.innerText="🟢 Device Connected";
+  }
+  else if(type==="offline"){
+    statusEl.className="status offline";
+    statusEl.innerText="❌ Device Disconnected (No data)";
+  }
+  else{
+    statusEl.className="status waiting";
+    statusEl.innerText="⚠️ Checking device status...";
+  }
+}
+
+// heartbeat = only when new data arrives
+// heartbeat = only when new data arrives
+function deviceHeartbeat(data){
+  lastUpdateTime = Date.now();
+
+  // ⭐ Check if all values are zero
+  const isZero = 
+    (!data) ||
+    ((data.air?.temperature === 0 || data.air?.temperature === undefined) &&
+     (data.air?.humidity === 0 || data.air?.humidity === undefined) &&
+     (data.plant1?.percent === 0 || data.plant1?.percent === undefined) &&
+     (data.plant2?.percent === 0 || data.plant2?.percent === undefined));
+
+  if(isZero){
+    setStatus("waiting"); // instead of online
+  } else {
+    setStatus("online");
+  }
+}
+
+
+// check every 1s (smooth)
+// check every 1s (smooth)
+setInterval(()=>{
+  if(lastUpdateTime === 0){
+    setStatus("waiting");
+    return;
+  }
+
+  const diff = (Date.now() - lastUpdateTime)/1000;
+
+  if(diff > 5){
+    setStatus("offline");
+
+    // ⭐ Reset all gauges locally
+    setGauge("p1Gauge","p1Text",0,100,"%");
+    setGauge("p2Gauge","p2Text",0,100,"%");
+    setGauge("airTempGauge","airTempText",0,50,"°C");
+    setGauge("airHumGauge","airHumText",0,100,"%");
+
+    updateElement('weather-temp', `Temperature: -- °C`);
+    updateElement('weather-hum', `Humidity: -- %`);
+    updateElement('weather-cond-text', `Condition: --`);
+    document.getElementById('weather-icon').src=""; 
+    updateElement('forecast-temp', `Temperature: -- °C`);
+    updateElement('forecast-hum', `Humidity: -- %`);
+    updateElement('forecast-cond-text', `Condition: --`);
+    document.getElementById('forecast-icon').src=""; 
+
+    // ⭐ Reset Firebase data to 0
+    db.ref('Air').set({temperature:0, humidity:0});
+    db.ref('Plant1Moisture').set({percent:0});
+    db.ref('Plant2Moisture').set({percent:0});
+  }
+},1000);
+
+
+
 </script>
 
 </body>
 </html>
+
+
+//with checker
