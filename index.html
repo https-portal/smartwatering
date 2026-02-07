@@ -486,14 +486,7 @@ setInterval(()=>{
     setGauge("airTempGauge","airTempText",0,50,"°C");
     setGauge("airHumGauge","airHumText",0,100,"%");
 
-    updateElement('weather-temp', `Temperature: -- °C`);
-    updateElement('weather-hum', `Humidity: -- %`);
-    updateElement('weather-cond-text', `Condition: --`);
-    document.getElementById('weather-icon').src=""; 
-    updateElement('forecast-temp', `Temperature: -- °C`);
-    updateElement('forecast-hum', `Humidity: -- %`);
-    updateElement('forecast-cond-text', `Condition: --`);
-    document.getElementById('forecast-icon').src=""; 
+
 
     // ⭐ Reset Firebase data to 0
     db.ref('Air').set({temperature:0, humidity:0});
