@@ -1,0 +1,12 @@
+{
+  "name": "water-system-notifications",
+  "version": "1.0.0",
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^11.11.0",
+    "express": "^4.18.2"  // optional if you want a ping endpoint
+  },
+  "scripts": {
+    "start": "node index.js"
+  }
+}
