@@ -1,12 +1,12 @@
 {
-  "name": "water-system-notifier",
+  "name": "water-dashboard",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "firebase-admin": "^11.10.1",
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "firebase-admin": "^11.10.1"
   }
 }
