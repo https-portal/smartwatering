@@ -1,12 +1,11 @@
 {
-  "name": "water-system-notifier",
+  "name": "water-system-notifications",
   "version": "1.0.0",
   "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^11.11.0"
+  },
   "scripts": {
     "start": "node index.js"
-  },
-  "dependencies": {
-    "firebase-admin": "^11.10.1"
-    
   }
 }
