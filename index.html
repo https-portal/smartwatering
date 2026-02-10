@@ -544,33 +544,35 @@ setInterval(()=>{
 
 const messaging = firebase.messaging();
 
-// register service worker
-navigator.serviceWorker.register('./firebase-messaging-sw.js')
-  .then(() => console.log("SW registered"));
+if ('serviceWorker' in navigator) {
+ navigator.serviceWorker.register('firebase-messaging-sw.js')
+
+    .then((registration) => {
+      console.log('Service Worker registered:', registration);
+      messaging.useServiceWorker(registration);
+    })
+    .catch(err => console.error('Service Worker registration failed:', err));
+}
 
 
-async function initNotifications() {
+async function requestNotificationPermission() {
   try {
     const permission = await Notification.requestPermission();
-    if (permission !== "granted") return;
+    if(permission === "granted"){
+  const token = await messaging.getToken({
+    vapidKey: "6amsy5-Z70mT0R380U1nQn_EQ4DhRpat6sCZgmNAo08"
+  });
 
-    const token = await messaging.getToken({
-      vapidKey: "BI9HCoP2mTvQuI24ZMbEWNhPJk4xoFumvhT7qaecz1gfprTTyIjWgPZqO_Zw4jh06f1iDD3JqkHnD9uxkVxDEGE"
-    });
-
-    console.log("FCM Token:", token);
-
-    if(token){
-      await db.ref("tokens").push(token);
-      console.log("Token saved to DB");
-    }
+  db.ref("tokens").push(token);
+}
 
   } catch (err) {
-    console.error(err);
+    console.error("Notification permission error:", err);
   }
 }
 
-initNotifications();
+requestNotificationPermission();
+
 
 messaging.onMessage((payload) => {
   new Notification(payload.notification.title, {
@@ -583,5 +585,4 @@ messaging.onMessage((payload) => {
 
 </body>
 </html>
-
 
