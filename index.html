@@ -544,9 +544,9 @@ setInterval(()=>{
 
 const messaging = firebase.messaging();
 
+// Register service worker
 if ('serviceWorker' in navigator) {
- navigator.serviceWorker.register('firebase-messaging-sw.js')
-
+  navigator.serviceWorker.register('firebase-messaging-sw.js')
     .then((registration) => {
       console.log('Service Worker registered:', registration);
       messaging.useServiceWorker(registration);
@@ -554,32 +554,43 @@ if ('serviceWorker' in navigator) {
     .catch(err => console.error('Service Worker registration failed:', err));
 }
 
-
-async function requestNotificationPermission() {
+// Request permission and get token
+async function initNotifications() {
   try {
     const permission = await Notification.requestPermission();
-    if(permission === "granted"){
-  const token = await messaging.getToken({
-    vapidKey: "6amsy5-Z70mT0R380U1nQn_EQ4DhRpat6sCZgmNAo08"
-  });
+    if (permission !== "granted") return console.log("Notifications denied");
 
-  db.ref("tokens").push(token);
-}
+    const token = await messaging.getToken({
+      vapidKey: "6amsy5-Z70mT0R380U1nQn_EQ4DhRpat6sCZgmNAo08"
+    });
+    console.log("FCM Token:", token);
+
+    // Save token in Firebase for server use
+    db.ref("tokens").push(token);
+
+    // Subscribe token to topic via server
+    await fetch('/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token })
+    });
 
   } catch (err) {
-    console.error("Notification permission error:", err);
+    console.error("Notification setup error:", err);
   }
 }
+initNotifications();
 
-requestNotificationPermission();
-
-
+// Handle foreground messages
 messaging.onMessage((payload) => {
-  new Notification(payload.notification.title, {
-    body: payload.notification.body
-  });
+  console.log('Foreground message received:', payload);
+  if(payload.notification){
+    new Notification(payload.notification.title, {
+      body: payload.notification.body,
+      icon: '/icon.png'
+    });
+  }
 });
-
 
 </script>
 
