@@ -544,53 +544,42 @@ setInterval(()=>{
 
 const messaging = firebase.messaging();
 
-// Register service worker
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('firebase-messaging-sw.js')
-    .then((registration) => {
-      console.log('Service Worker registered:', registration);
-      messaging.useServiceWorker(registration);
-    })
-    .catch(err => console.error('Service Worker registration failed:', err));
-}
+// register service worker
+navigator.serviceWorker.register('firebase-messaging-sw.js', {
+  scope: './'
+}).then(reg => {
+  console.log("SW registered");
+});
 
-// Request permission and get token
 async function initNotifications() {
   try {
     const permission = await Notification.requestPermission();
-    if (permission !== "granted") return console.log("Notifications denied");
+    if (permission !== "granted") return;
 
     const token = await messaging.getToken({
       vapidKey: "BOUByI2tQ8gC42mMD6XuLKl881LsIC0eZ6R4M23-fsddAlgxBQVmL9hPbwdlMfzl69Wcil9o6Js6OdP9jD4tAto"
     });
+
     console.log("FCM Token:", token);
 
-    // Save token in Firebase for server use
-    db.ref("tokens").push(token);
-
-    // Subscribe token to topic via server
-    await fetch('/subscribe', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token })
-    });
+    if(token){
+      await db.ref("tokens").push(token);
+      console.log("Token saved to DB");
+    }
 
   } catch (err) {
-    console.error("Notification setup error:", err);
+    console.error(err);
   }
 }
+
 initNotifications();
 
-// Handle foreground messages
 messaging.onMessage((payload) => {
-  console.log('Foreground message received:', payload);
-  if(payload.notification){
-    new Notification(payload.notification.title, {
-      body: payload.notification.body,
-      icon: '/icon.png'
-    });
-  }
+  new Notification(payload.notification.title, {
+    body: payload.notification.body
+  });
 });
+
 
 </script>
 
