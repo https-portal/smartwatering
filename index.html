@@ -560,7 +560,7 @@ async function requestNotificationPermission() {
     const permission = await Notification.requestPermission();
     if(permission === "granted"){
   const token = await messaging.getToken({
-    vapidKey: "6amsy5-Z70mT0R380U1nQn_EQ4DhRpat6sCZgmNAo08"
+    vapidKey: "BI9HCoP2mTvQuI24ZMbEWNhPJk4xoFumvhT7qaecz1gfprTTyIjWgPZqO_Zw4jh06f1iDD3JqkHnD9uxkVxDEGE"
   });
 
   db.ref("tokens").push(token);
@@ -585,3 +585,4 @@ messaging.onMessage((payload) => {
 
 </body>
 </html>
+
