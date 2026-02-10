@@ -559,13 +559,12 @@ async function requestNotificationPermission() {
   try {
     const permission = await Notification.requestPermission();
     if(permission === "granted"){
-  const token = await messaging.getToken({
-    vapidKey: "6amsy5-Z70mT0R380U1nQn_EQ4DhRpat6sCZgmNAo08"
-  });
+      const token = await messaging.getToken({
+        vapidKey: "6amsy5-Z70mT0R380U1nQn_EQ4DhRpat6sCZgmNAo08"
+      });
 
-  db.ref("tokens").push(token);
-}
-
+      db.ref("tokens").push(token);
+    }
   } catch (err) {
     console.error("Notification permission error:", err);
   }
@@ -573,13 +572,17 @@ async function requestNotificationPermission() {
 
 requestNotificationPermission();
 
-
-messaging.onMessage((payload) => {
-  new Notification(payload.notification.title, {
-    body: payload.notification.body
+// ----- Add topic subscription here -----
+messaging.subscribeToTopic = async (topic) => {
+  const token = await messaging.getToken({ vapidKey: "6amsy5-Z70mT0R380U1nQn_EQ4DhRpat6sCZgmNAo08" });
+  await fetch("/subscribe-topic", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token, topic })
   });
-});
+};
 
+requestNotificationPermission().then(() => messaging.subscribeToTopic("plantAlerts"));
 
 </script>
 
