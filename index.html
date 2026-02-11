@@ -555,39 +555,6 @@ if ('serviceWorker' in navigator) {
 }
 
 
-async function requestNotificationPermission() {
-  try {
-    const permission = await Notification.requestPermission();
-    if(permission === "granted"){
-  const token = await messaging.getToken({
-    vapidKey: "BI9HCoP2mTvQuI24ZMbEWNhPJk4xoFumvhT7qaecz1gfprTTyIjWgPZqO_Zw4jh06f1iDD3JqkHnD9uxkVxDEGE"
-  });
-
-  db.ref("tokens").push(token);
-
-
-fetch('https://smartwatering-production.up.railway.app/subscribe', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ token, topic: "plantAlerts" })
-});
-
-}
-
-  } catch (err) {
-    console.error("Notification permission error:", err);
-  }
-}
-
-requestNotificationPermission();
-
-
-messaging.onMessage((payload) => {
-  new Notification(payload.notification.title, {
-    body: payload.notification.body
-  });
-});
-
 
 
  async function setupNotifications() {
@@ -637,6 +604,7 @@ setupNotifications();
 
 </body>
 </html>
+
 
 
 
