@@ -564,6 +564,13 @@ async function requestNotificationPermission() {
   });
 
   db.ref("tokens").push(token);
+
+
+     fetch('/subscribe', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ token, topic: "plantAlerts" })
+});
 }
 
   } catch (err) {
@@ -585,4 +592,5 @@ messaging.onMessage((payload) => {
 
 </body>
 </html>
+
 
