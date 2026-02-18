@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -9,7 +9,6 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js"></script>
 
 <style>
 body{
@@ -246,15 +245,6 @@ h1{
 
 
 <script>
-
-
-
-
-
-
-
-
-
 // ---------- Firebase Init ----------
 const firebaseConfig = {
   apiKey: "AIzaSyDptVEqHvZqOF1deQrOpnhQI_w6Vb5n4zQ",
@@ -269,10 +259,6 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const WEATHER_API_KEY = "86944fb558c8416b86651651262801";
-
-
-let plant1Alerted = false;
-let plant2Alerted = false;
 
 // ---------- Helpers ----------
 function updateElement(id, text){ const el=document.getElementById(id); if(el) el.innerText=text; }
@@ -330,25 +316,6 @@ db.ref('Plant1Moisture').on('value', snap => {
   });
 
   setGauge("p1Gauge","p1Text",d.percent,100,"%");
-
-if(d.percent < 30 && !plant1Alerted){
-  plant1Alerted = true;
-
-  new Notification("🌱 Plant 1 Dry!", {
-    body: "Moisture below 30%"
-  });
-}
-
-if(d.percent >= 30){
-  plant1Alerted = false;
-}
-
-
-
-
-
-
-
 });
 
 db.ref('Plant2Moisture').on('value', snap => {
@@ -365,20 +332,6 @@ db.ref('Plant2Moisture').on('value', snap => {
   });
 
   setGauge("p2Gauge","p2Text",d.percent,100,"%");
-
-  if(d.percent < 30 && !plant2Alerted){
-  plant2Alerted = true;
-
-  new Notification("🌿 Plant 2 Dry!", {
-    body: "Moisture below 30%"
-  });
-}
-
-if(d.percent >= 30){
-  plant2Alerted = false;
-}
-
-  
 });
 
 // ---------- Weather Fetch ----------
@@ -533,7 +486,14 @@ setInterval(()=>{
     setGauge("airTempGauge","airTempText",0,50,"°C");
     setGauge("airHumGauge","airHumText",0,100,"%");
 
-
+    updateElement('weather-temp', `Temperature: -- °C`);
+    updateElement('weather-hum', `Humidity: -- %`);
+    updateElement('weather-cond-text', `Condition: --`);
+    document.getElementById('weather-icon').src=""; 
+    updateElement('forecast-temp', `Temperature: -- °C`);
+    updateElement('forecast-hum', `Humidity: -- %`);
+    updateElement('forecast-cond-text', `Condition: --`);
+    document.getElementById('forecast-icon').src=""; 
 
     // ⭐ Reset Firebase data to 0
     db.ref('Air').set({temperature:0, humidity:0});
@@ -541,62 +501,6 @@ setInterval(()=>{
     db.ref('Plant2Moisture').set({percent:0});
   }
 },1000);
-
-const messaging = firebase.messaging();
-
-if ('serviceWorker' in navigator) {
- navigator.serviceWorker.register('firebase-messaging-sw.js')
-
-    .then((registration) => {
-      console.log('Service Worker registered:', registration);
-      messaging.useServiceWorker(registration);
-    })
-    .catch(err => console.error('Service Worker registration failed:', err));
-}
-
-
-
-
- async function setupNotifications() {
-  try {
-    // Request notification permission from user
-    const permission = await Notification.requestPermission();
-    if (permission !== "granted") {
-      console.warn("Notification permission denied");
-      return;
-    }
-
-    // Get FCM token
-    const token = await messaging.getToken({
-      vapidKey: "BI9HCoP2mTvQuI24ZMbEWNhPJk4xoFumvhT7qaecz1gfprTTyIjWgPZqO_Zw4jh06f1iDD3JqkHnD9uxkVxDEGE"
-    });
-
-    if (!token) {
-      console.error("Failed to get FCM token");
-      return;
-    }
-
-    console.log("FCM token:", token);
-
-    // Optional: store token in Firebase DB
-    db.ref("tokens").push(token);
-
-    // Subscribe token to topic via Node.js endpoint
-    await fetch('https://smartwatering-production.up.railway.app/subscribe', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token, topic: "plantAlerts" })
-    });
-
-    console.log("Subscribed to topic: plantAlerts");
-
-  } catch (err) {
-    console.error("Notification setup error:", err);
-  }
-}
-
-// Call this function once when page loads
-setupNotifications();
 
 
 
@@ -606,7 +510,4 @@ setupNotifications();
 </html>
 
 
-
-
-
-
+//with checker
