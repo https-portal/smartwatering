@@ -184,7 +184,15 @@ function getMoistureClass(percent){
   return percent<30?'moisture-low':percent<70?'moisture-medium':'moisture-high';
 }
 function calculatePercent(raw){
-  return Math.round((4095 - raw)/4095 * 100);
+  const wetValue = 2000;
+  const dryValue = 4095;
+
+  let percent = (raw - dryValue) * 100 / (wetValue - dryValue);
+
+  // limit between 0–100
+  percent = Math.max(0, Math.min(100, percent));
+
+  return Math.round(percent);
 }
 
 // ---------- Chart Setup ----------
@@ -303,3 +311,4 @@ document.getElementById('viewGraphBtn').addEventListener('click', ()=>{
 </script>
 </body>
 </html>
+
