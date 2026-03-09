@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Waterflow History with Graph</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f2f2f2;
+    }
+    h1 {
+      text-align: center;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background: #fff;
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #ddd;
+      text-align: center;
+    }
+    th {
+      background: #4CAF50;
+      color: white;
+    }
+    #chartContainer {
+      width: 100%;
+      margin-top: 40px;
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Waterflow History</h1>
+
+  <div id="chartContainer">
+    <canvas id="flowChart"></canvas>
+  </div>
+
+  <table id="flowTable">
+    <thead>
+      <tr>
+        <th>Timestamp</th>
+        <th>Flow1 (L/min)</th>
+        <th>Flow2 (L/min)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Data will be inserted here -->
+    </tbody>
+  </table>
+
+  <script>
+    // Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDptVEqHvZqOF1deQrOpnhQI_w6Vb5n4zQ",
+      authDomain: "watersystem-e444e.firebaseapp.com",
+      databaseURL: "https://watersystem-e444e-default-rtdb.firebaseio.com",
+      projectId: "watersystem-e444e",
+      storageBucket: "watersystem-e444e.firebasestorage.app",
+      messagingSenderId: "528910169669",
+      appId: "1:528910169669:web:05c99d2ca2e6d8c069952c",
+      measurementId: "G-H05MNY69J6"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Reference to flowdata
+    const flowRef = db.ref('flowdata');
+
+    // Arrays for chart
+    let timestamps = [];
+    let flow1Data = [];
+    let flow2Data = [];
+
+    flowRef.once('value', (snapshot) => {
+      const data = snapshot.val();
+      const tbody = document.querySelector('#flowTable tbody');
+      tbody.innerHTML = '';
+
+      // Sort timestamps for chronological order
+      const sortedTimestamps = Object.keys(data).sort();
+
+      sortedTimestamps.forEach(timestamp => {
+        const flow1 = parseFloat(data[timestamp].flow1_L_per_min.toFixed(3));
+        const flow2 = parseFloat(data[timestamp].flow2_L_per_min.toFixed(3));
+
+        // Add to table
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${timestamp}</td>
+          <td>${flow1}</td>
+          <td>${flow2}</td>
+        `;
+        tbody.appendChild(row);
+
+        // Add to chart arrays
+        timestamps.push(timestamp);
+        flow1Data.push(flow1);
+        flow2Data.push(flow2);
+      });
+
+      // Create chart
+      const ctx = document.getElementById('flowChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: timestamps,
+          datasets: [
+            {
+              label: 'Flow1 (L/min)',
+              data: flow1Data,
+              borderColor: 'rgba(75, 192, 192, 1)',
+              backgroundColor: 'rgba(75, 192, 192, 0.2)',
+              fill: true,
+              tension: 0.3
+            },
+            {
+              label: 'Flow2 (L/min)',
+              data: flow2Data,
+              borderColor: 'rgba(255, 99, 132, 1)',
+              backgroundColor: 'rgba(255, 99, 132, 0.2)',
+              fill: true,
+              tension: 0.3
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              position: 'top',
+            },
+            title: {
+              display: true,
+              text: 'Waterflow Over Time'
+            }
+          },
+          scales: {
+            x: {
+              ticks: {
+                maxRotation: 90,
+                minRotation: 45,
+                autoSkip: true,
+                maxTicksLimit: 20
+              }
+            },
+            y: {
+              beginAtZero: true
+            }
+          }
+        }
+      });
+    });
+  </script>
+</body>
+</html>
