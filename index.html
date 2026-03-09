@@ -24,20 +24,22 @@ h1{
 }
 
 /* TOP BAR */
+/* TOP BAR */
 #topbar{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:10px;
+  display:flex;           /* use flex to align in one row */
+  justify-content:center; /* center buttons horizontally */
+  gap:15px;               /* spacing between buttons */
   margin-bottom:20px;
 }
 #topbar button{
-  padding:14px;
+  padding:12px 18px;
   background:white;
   border:2px solid #00796b;
   border-radius:12px;
   color:#00796b;
   font-weight:bold;
   cursor:pointer;
+  transition:0.2s;
 }
 #topbar button:hover{
   background:#00796b;
@@ -148,6 +150,14 @@ h1{
 #closeMapBtn { background:red; }
 #closeMapBtn:hover { background:darkred; }
 #saveLocationBtn:hover { background:#004d40; }
+
+  #viewHistoryBtn, #openWaterflowBtn {
+    margin-right: 10px;
+    padding: 8px 16px;
+    font-size: 14px;
+  }
+
+
 </style>
 </head>
 
@@ -158,6 +168,9 @@ h1{
 <div id="topbar">
   <button id="setLocationBtn">Set Location</button>
   <button id="viewHistoryBtn">   View History</button>
+
+    <button id="openWaterflowBtn" onclick="openWaterflow()">Open Waterflow</button>
+  
 </div>
 
 <!-- PLANTS -->
@@ -348,6 +361,11 @@ saveLocationBtn.addEventListener('click', ()=>{
   alert("Location saved: "+coordsStr);
 });
 
+  function openWaterflow() {
+    // Opens waterflow.html in the same tab
+    window.location.href = "waterflow.html";
+  }
+
 // Close Map
 closeMapBtn.addEventListener('click', ()=>mapModal.style.display='none');
 mapModal.addEventListener('click', e=>{ if(e.target===mapModal) mapModal.style.display='none'; });
@@ -360,4 +378,3 @@ document.getElementById('viewHistoryBtn').addEventListener('click', ()=>{
 
 </body>
 </html>
-
