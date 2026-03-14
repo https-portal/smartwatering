@@ -184,7 +184,7 @@ function getMoistureClass(percent){
   return percent<30?'moisture-low':percent<70?'moisture-medium':'moisture-high';
 }
 function calculatePercent(raw){
-  const wetValue = 2000;
+  const wetValue = 1;
   const dryValue = 4095;
 
   let percent = (raw - dryValue) * 100 / (wetValue - dryValue);
